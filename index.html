@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FlytBase SE Hackathon — KB Agent &amp; Feedback Lifecycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d1117;
+    --panel:#141b24;
+    --panel-2:#1a2330;
+    --line:#26313f;
+    --text:#e6edf3;
+    --muted:#8a97a6;
+    --accent:#3ddc97;
+    --accent-dim:#1f6b4d;
+    --amber:#f0b25b;
+    --red:#e8637a;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Inter',system-ui,sans-serif; line-height:1.5;
+  }
+  code, .mono{ font-family:'IBM Plex Mono',monospace; }
+  header{
+    padding:28px 32px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  }
+  header h1{ font-size:18px; margin:0; letter-spacing:.2px; }
+  header h1 span{ color:var(--accent); }
+  header p{ margin:4px 0 0; color:var(--muted); font-size:13px; }
+  nav{ display:flex; gap:6px; padding:16px 32px 0; }
+  nav button{
+    background:none; border:1px solid var(--line); color:var(--muted);
+    padding:9px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:500;
+    transition:.15s;
+  }
+  nav button.active{ background:var(--panel-2); color:var(--text); border-color:var(--accent-dim); }
+  main{ padding:24px 32px 60px; max-width:1100px; margin:0 auto; }
+  section{ display:none; }
+  section.active{ display:block; }
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin-bottom:18px; }
+  .panel h2{ font-size:14px; margin:0 0 14px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
+  textarea, input, select{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:10px 12px; font-size:13.5px; font-family:inherit; resize:vertical;
+  }
+  label{ font-size:12px; color:var(--muted); display:block; margin:0 0 6px; }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; }
+  .row > div{ flex:1; min-width:200px; }
+  button.primary{
+    background:var(--accent); color:#04140d; border:none; padding:10px 18px;
+    border-radius:8px; font-weight:600; cursor:pointer; font-size:13.5px; margin-top:12px;
+  }
+  button.primary:hover{ filter:brightness(1.08); }
+  button.secondary{
+    background:transparent; border:1px solid var(--line); color:var(--text); padding:8px 14px;
+    border-radius:7px; cursor:pointer; font-size:12.5px; margin:4px 6px 0 0;
+  }
+  .example-q{ font-size:12px; }
+  .answer{ white-space:pre-wrap; font-size:13.5px; line-height:1.65; margin-top:6px; }
+  .sources{ margin-top:14px; font-size:12px; color:var(--muted); }
+  .tag{
+    display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600;
+    background:var(--panel-2); border:1px solid var(--line); margin:2px 4px 2px 0;
+  }
+  .tag.customer{ color:var(--accent); border-color:var(--accent-dim); }
+  .tag.docs{ color:var(--amber); border-color:#5c4520; }
+  .tag.warn{ color:var(--red); border-color:#5c2530; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th, td{ text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; }
+  tr:hover{ background:var(--panel-2); cursor:pointer; }
+  .pill{ padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600; }
+  .pill.new{ background:#26313f; color:#9fb0c3; }
+  .pill.in_product_review{ background:#3a2f10; color:var(--amber); }
+  .pill.in_development{ background:#123a3a; color:#5ecfcf; }
+  .pill.shipped{ background:#123a24; color:var(--accent); }
+  .pill.feature_request{ color:#8db4f2; }
+  .pill.bug{ color:var(--red); }
+  .pill.support{ color:var(--muted); }
+  .stage-track{ display:flex; gap:0; margin:14px 0; }
+  .stage-step{ flex:1; text-align:center; padding:8px 4px; font-size:11.5px; border-bottom:3px solid var(--line); color:var(--muted); }
+  .stage-step.done{ border-color:var(--accent); color:var(--text); }
+  .stage-step.current{ border-color:var(--amber); color:var(--text); font-weight:600; }
+  .event{ border-left:2px solid var(--line); padding:6px 0 6px 14px; margin-bottom:4px; font-size:12.5px; }
+  .event .meta{ color:var(--muted); font-size:11px; }
+  .empty{ color:var(--muted); font-size:13px; padding:10px 0; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .footer-note{ color:var(--muted); font-size:11.5px; margin-top:24px; text-align:center; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1><span>FlytBase</span> SE Hackathon — Solutions Engineer Track</h1>
+    <p>Problem #2: Knowledge Base over Customer Data · Problem #3: Product Feedback Lifecycle Tracker</p>
+  </div>
+</header>
+
+<nav>
+  <button class="tab-btn active" data-tab="kb">Knowledge Base Agent</button>
+  <button class="tab-btn" data-tab="lifecycle">Feedback Lifecycle Tracker</button>
+</nav>
+
+<main>
+
+  <!-- ============ PROBLEM #2 ============ -->
+  <section id="kb" class="active">
+    <div class="panel">
+      <h2>Ask a question</h2>
+      <textarea id="kb-question" rows="2" placeholder="e.g. Which Enterprise accounts in the energy industry are at risk?"></textarea>
+      <div>
+        <button class="secondary example-q" data-q="Which accounts requested single sign-on support, and does FlytBase already support SSO according to the docs?">Combined example</button>
+        <button class="secondary example-q" data-q="What is Ironvale Mining's ARR, tier, and health status?">Customer-data-only example</button>
+        <button class="secondary example-q" data-q="How does FlytBase handle geofencing configuration according to the docs?">Docs-only example</button>
+      </div>
+      <button class="primary" id="kb-ask-btn">Ask</button>
+    </div>
+
+    <div class="panel" id="kb-result-panel" style="display:none;">
+      <h2>Answer</h2>
+      <div class="answer" id="kb-answer"></div>
+      <div class="sources" id="kb-sources"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Most asked (usage signal)</h2>
+      <div id="kb-usage" class="empty">No queries logged yet.</div>
+    </div>
+  </section>
+
+  <!-- ============ PROBLEM #3 ============ -->
+  <section id="lifecycle">
+    <div class="panel">
+      <h2>Step 1 — Triage a raw message</h2>
+      <div class="row">
+        <div>
+          <label>Account (optional)</label>
+          <input id="tr-account" placeholder="e.g. Meridian AgriTech" />
+        </div>
+      </div>
+      <label style="margin-top:10px;">Raw text (call note / KB entry / support message)</label>
+      <textarea id="tr-text" rows="3" placeholder="e.g. Customer says the dashboard is loading noticeably slower than usual for all users on their account."></textarea>
+      <button class="primary" id="tr-btn">Triage &amp; create request</button>
+      <div id="tr-result" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Tracked requests</h2>
+      <table id="req-table">
+        <thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Team</th><th>Account</th><th>Stage</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="panel" id="detail-panel" style="display:none;">
+      <h2 id="detail-title">Request detail</h2>
+      <div class="stage-track" id="stage-track"></div>
+      <div class="row" style="margin-bottom:10px;">
+        <div>
+          <label>Advance to</label>
+          <select id="advance-select">
+            <option value="new">new</option>
+            <option value="in_product_review">in_product_review</option>
+            <option value="in_development">in_development</option>
+            <option value="shipped">shipped</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button class="primary" id="advance-btn" style="margin-top:0;">Advance stage</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Log customer feedback (only once shipped)</label>
+          <textarea id="fb-text" rows="2" placeholder="e.g. Love the export, but can it include timestamps in UTC?"></textarea>
+          <button class="primary" id="fb-btn">Submit feedback</button>
+          <div id="fb-result" style="margin-top:8px;"></div>
+        </div>
+        <div>
+          <label>Team views</label>
+          <div class="row">
+            <button class="secondary" id="view-product">Product view</button>
+            <button class="secondary" id="view-dev">Dev view</button>
+            <button class="secondary" id="view-summary">Auto-summary</button>
+          </div>
+          <div id="team-view-result" style="margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <h2 style="margin-top:18px;">Event history</h2>
+      <div id="event-list"></div>
+    </div>
+  </section>
+
+  <p class="footer-note">Synthetic demo data only · Live docs queried at question time from docs.flytbase.com &amp; releases.flytbase.com</p>
+</main>
+
+<script>
+const API = '';
+let currentRequestId = null;
+const STAGES = ['new','in_product_review','in_development','shipped'];
+
+// ---- tabs ----
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('main section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ================= KNOWLEDGE BASE (Problem #2) =================
+document.querySelectorAll('.example-q').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('kb-question').value = btn.dataset.q;
+  });
+});
+
+document.getElementById('kb-ask-btn').addEventListener('click', async () => {
+  const question = document.getElementById('kb-question').value.trim();
+  if (!question) return;
+  const btn = document.getElementById('kb-ask-btn');
+  btn.disabled = true; btn.textContent = 'Thinking…';
+  try {
+    const res = await fetch(`${API}/api/ask`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ question })
+    });
+    const data = await res.json();
+    document.getElementById('kb-result-panel').style.display = 'block';
+    if (data.error) {
+      document.getElementById('kb-answer').textContent = 'Error: ' + data.error;
+      document.getElementById('kb-sources').innerHTML = '';
+    } else {
+      document.getElementById('kb-answer').textContent = data.answer;
+      const cs = data.sources.customer.map(c => `<span class="tag customer">${c.id}</span>`).join('');
+      const ds = data.sources.docs.map(d => `<span class="tag docs">${d.title || d.url}</span>`).join('');
+      const warn = data.contradictionFlag ? '<span class="tag warn">contradiction flagged</span>' : '';
+      document.getElementById('kb-sources').innerHTML = `${cs}${ds}${warn}` || '<span class="empty">No sources matched.</span>';
+    }
+    loadUsage();
+  } catch (e) {
+    document.getElementById('kb-result-panel').style.display = 'block';
+    document.getElementById('kb-answer').textContent = 'Request failed: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Ask';
+  }
+});
+
+async function loadUsage(){
+  try {
+    const res = await fetch(`${API}/api/ask/usage`);
+    const data = await res.json();
+    const el = document.getElementById('kb-usage');
+    if (!data.top || !data.top.length) { el.innerHTML = '<div class="empty">No queries logged yet.</div>'; return; }
+    el.innerHTML = data.top.map(t => `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--line); font-size:13px;"><span>${t.question}</span><span class="mono" style="color:var(--muted)">${t.count}×</span></div>`).join('');
+  } catch(e) {}
+}
+loadUsage();
+
+// ================= LIFECYCLE TRACKER (Problem #3) =================
+document.getElementById('tr-btn').addEventListener('click', async () => {
+  const raw_text = document.getElementById('tr-text').value.trim();
+  const account_name = document.getElementById('tr-account').value.trim();
+  if (!raw_text) return;
+  const btn = document.getElementById('tr-btn');
+  btn.disabled = true; btn.textContent = 'Classifying…';
+  try {
+    const res = await fetch(`${API}/api/triage`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ raw_text, account_name })
+    });
+    const data = await res.json();
+    const el = document.getElementById('tr-result');
+    if (data.error) { el.innerHTML = `<span class="tag warn">${data.error}</span>`; }
+    else {
+      el.innerHTML = `Classified as <span class="pill ${data.classification.type}">${data.classification.type}</span> → routed to <b>${data.classification.team}</b> (confidence ${(data.classification.confidence*100).toFixed(0)}%)<br><span style="color:var(--muted); font-size:12px;">${data.classification.reasoning}</span>`;
+    }
+    document.getElementById('tr-text').value = '';
+    loadRequests();
+  } catch(e) {
+    document.getElementById('tr-result').textContent = 'Request failed: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Triage & create request';
+  }
+});
+
+async function loadRequests(){
+  const res = await fetch(`${API}/api/requests`);
+  const data = await res.json();
+  const tbody = document.querySelector('#req-table tbody');
+  tbody.innerHTML = '';
+  (data.requests || []).forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="mono">${r.id}</td><td>${r.title || ''}</td><td><span class="pill ${r.type}">${r.type}</span></td><td>${r.team}</td><td>${r.account_name || '—'}</td><td><span class="pill ${r.stage}">${r.stage}</span></td>`;
+    tr.addEventListener('click', () => openDetail(r.id));
+    tbody.appendChild(tr);
+  });
+}
+loadRequests();
+
+async function openDetail(id){
+  currentRequestId = id;
+  const res = await fetch(`${API}/api/requests/${id}`);
+  const data = await res.json();
+  document.getElementById('detail-panel').style.display = 'block';
+  document.getElementById('detail-title').textContent = `${data.request.id} — ${data.request.title}`;
+
+  const curIdx = STAGES.indexOf(data.request.stage);
+  document.getElementById('stage-track').innerHTML = STAGES.map((s,i) => {
+    const cls = i < curIdx ? 'done' : (i === curIdx ? 'current' : '');
+    return `<div class="stage-step ${cls}">${s}</div>`;
+  }).join('');
+
+  renderEvents(data.events);
+  document.getElementById('team-view-result').innerHTML = '';
+  document.getElementById('fb-result').innerHTML = '';
+  document.getElementById('detail-panel').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function renderEvents(events){
+  const el = document.getElementById('event-list');
+  if (!events.length) { el.innerHTML = '<div class="empty">No events yet.</div>'; return; }
+  el.innerHTML = events.map(e => `
+    <div class="event">
+      <div><b>${e.event_type}</b>${e.to_stage ? ` → <span class="pill ${e.to_stage}">${e.to_stage}</span>` : ''}</div>
+      ${e.detail ? `<div>${e.detail}</div>` : ''}
+      <div class="meta">${new Date(e.created_at).toLocaleString()} ${e.visible_to?.length ? '· visible to: ' + e.visible_to.join(', ') : ''}</div>
+    </div>`).join('');
+}
+
+document.getElementById('advance-btn').addEventListener('click', async () => {
+  if (!currentRequestId) return;
+  const to_stage = document.getElementById('advance-select').value;
+  await fetch(`${API}/api/requests/${currentRequestId}/advance`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ to_stage })
+  });
+  openDetail(currentRequestId);
+  loadRequests();
+});
+
+document.getElementById('fb-btn').addEventListener('click', async () => {
+  if (!currentRequestId) return;
+  const feedback_text = document.getElementById('fb-text').value.trim();
+  if (!feedback_text) return;
+  const res = await fetch(`${API}/api/requests/${currentRequestId}/feedback`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ feedback_text })
+  });
+  const data = await res.json();
+  const el = document.getElementById('fb-result');
+  if (data.error) { el.innerHTML = `<span class="tag warn">${data.error}</span>`; }
+  else {
+    el.innerHTML = 'Feedback logged, visible to <b>product</b> and <b>dev</b>.' +
+      (data.linkedRequest ? `<br>Recognized as a new request → created <span class="mono">${data.linkedRequest.id}</span>: "${data.linkedRequest.title}"` : '');
+  }
+  document.getElementById('fb-text').value = '';
+  openDetail(currentRequestId);
+  loadRequests();
+});
+
+document.getElementById('view-product').addEventListener('click', () => loadTeamView('product'));
+document.getElementById('view-dev').addEventListener('click', () => loadTeamView('dev'));
+
+async function loadTeamView(team){
+  if (!currentRequestId) return;
+  const res = await fetch(`${API}/api/requests/${currentRequestId}/team-view?team=${team}`);
+  const data = await res.json();
+  const el = document.getElementById('team-view-result');
+  el.innerHTML = `<b>${team} view</b> (${data.events.length} visible events):` +
+    data.events.map(e => `<div class="event"><b>${e.event_type}</b> ${e.detail || ''}</div>`).join('');
+}
+
+document.getElementById('view-summary').addEventListener('click', async () => {
+  if (!currentRequestId) return;
+  const el = document.getElementById('team-view-result');
+  el.textContent = 'Summarizing…';
+  const res = await fetch(`${API}/api/requests/${currentRequestId}/summary`);
+  const data = await res.json();
+  el.innerHTML = data.summary ? `<b>Status update draft:</b><div class="answer">${data.summary}</div>` : `Error: ${data.error}`;
+});
+</script>
+</body>
+</html>
