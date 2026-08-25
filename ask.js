@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { supabase } from '../db.js';
-import { retrieveCustomerChunks } from '../retrieve.js';
-import { fetchLiveDocs } from '../docs_fetch.js';
-import { synthesizeAnswer } from '../llm.js';
+import { supabase } from './db.js';
+import { retrieveCustomerChunks } from './retrieve.js';
+import { fetchLiveDocs } from './docs_fetch.js';
+import { synthesizeAnswer } from './llm.js';
 
 const router = Router();
 
