@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { supabase } from '../db.js';
-import { triageRawText } from '../llm.js';
+import { supabase } from './db.js';
+import { triageRawText } from './llm.js';
 
 const router = Router();
 
