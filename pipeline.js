@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { supabase } from '../db.js';
-import { classifyFeedback, summarizeStatus } from '../llm.js';
+import { supabase } from './db.js';
+import { classifyFeedback, summarizeStatus } from './llm.js';
 
 const router = Router();
 
