@@ -11,7 +11,7 @@ import {
 } from './parse.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+const DATA_DIR = process.env.DATA_DIR || __dirname;
 
 // Build the text a chunk will be embedded from, and a stable chunk id.
 function chunksFromIssues(rows) {
