@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "FlytBase GTM Hackathon — Problem #2 (Knowledge Base over Customer Data) + Problem #3 (Product Feedback Lifecycle Tracker)",
   "type": "module",
-  "main": "server/index.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node server/index.js",
-    "ingest": "node server/ingest.js",
-    "dev": "node --watch server/index.js"
+    "start": "node index.js",
+    "ingest": "node ingest.js",
+    "dev": "node --watch index.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
